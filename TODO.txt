@@ -3,3 +3,6 @@
 TODO
 ====
 
+1. create level file structure
+2. make console repl to work on structure
+3. profit
