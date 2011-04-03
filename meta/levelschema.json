@@ -1,17 +1,22 @@
 # this is a draft level schema for the text-based engine.
 
-{"headline": "Text field headline for newspaper",
- "photo"   : "path/to/image for level",
- "text"    : "article for newspaper",
- "objects" : 
+{"headline"  : "Text field headline for newspaper",
+ "photo"     : "path/to/image/for/level",
+ "text"      : "article for newspaper",
+ "objects"   : 
+              # objects are the base representation for anything
+              # in the game including the room itself and
+              # humans. This way it is easy to say.
+              # "list all" to show objects in the scene. 
+              # "list bench" to show objects inside the bench.
+
               #unique-id.  
-             ["spanner" : {"name"       : "spanner",
+             {"spanner" : {"name"       : "spanner",
                            "collectable": True,
                            "location"   : "bench",
                            "position"   : "ontop",
                            "description": "a heavy spanner",
 			  }, 
-
               "bench"   : {"name"       : "wooden bench",
                            "location"   : "darkroom",
                            "position"   : "inside",
@@ -20,5 +25,65 @@
               "darkroom": {"name"       : "dark room",
                            # no location root object.
                            "description": "a dark dusty room",
-                          }
+                          },
+              "jason"   : {"name"       : "Dr. Jason",
+                           "location"   : "darkroom",
+                           "human"      : True,
+                           "position"   : "inside",
+                           "description": "A pleasant man"},
+             },
+ "characters":
+             {"jason"   : {
+                           # characters can just talk, or they can
+                           # want an item and give a reward in 
+                           # exchange.
+
+                           # if you give a spanner, you get a reward.
+                           "wants"      : "spanner", 
+                           "reward"     : "handshake",
+                           "convos"     : 
+                                    ["intro",
+                                     cycle(["still", "tired"])
+                                    ]
+                          },
+	     },
+              
+ "convos"    :
+             # conversations are each a list of sentences to say.
+             # all of the sentences in the convo are read out
+             # one by one without interruption.
+             {"intro"   : ["Hi I am %(name)s",
+                           "I am looking for a tool",
+                           "have you seen it?"],
+              "still"   : ["I am still looking for that tool"],
+              "tired"   : ["I am tired of looking, want to help?"],
+              "thankyou": ["Thank you so much",
+                           "I needed that for a project"
+                           "that I am working on."],
+             },
+						
+ "rewards"   :
+             # a reward is just a series of actions, here are defined
+             # two actions:
+             # a convo, where the second tuple elem is the convo id.
+             # and end-level, whose second elem isn't used.
+            
+             {"handshake":[ #a series of actions.
+                           ('convos', 'thankyou'),
+                           ('end-level', None) ],
+             },
+ "hints"     : 
+             [
+               #(hint string with named params, object id)
+                ("%(name)s looks like he wants to talk", "jason"),
+                ("maybe he is looking for something"
+                 " %(description)s",                     "spanner"),
+                ("give him the %(name)s already", "spanner"),
+             ],
+ "end-level" :
+             # a series of statements to make before leaving.
+             # notice that here too a statement may be a plain string.
+             # or a tuple with a named parameter and an object.
+             ["Happy with your work, you leave the smiling",
+              ("%(name)s alone.", "jason")]
 }
