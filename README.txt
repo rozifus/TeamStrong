@@ -1,5 +1,5 @@
-Your Game Title
-===============
+The Nine Times
+==============
 
 Entry in PyWeek #12  <http://www.pyweek.org/12/>
 URL: https://github.com/rozifus/TeamStrong
