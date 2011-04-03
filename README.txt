@@ -3,8 +3,8 @@ Your Game Title
 
 Entry in PyWeek #12  <http://www.pyweek.org/12/>
 URL: https://github.com/rozifus/TeamStrong
-Team: YOUR TEAM NAME (leave the "Team: bit")
-Members: YOUR TEAM MEMBERS (leave the "Members: bit")
+Team: TeamStrong
+Members: rozifus,kburd,jtrain,danaran
 License: see LICENSE.txt
 
 
