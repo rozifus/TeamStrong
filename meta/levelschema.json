@@ -1,0 +1,9 @@
+# this is a draft level schema for the text-based engine.
+
+{"headline": "Text field headline for newspaper",
+ "photo"   : "path/to/image for level",
+ "text"    : "article for newspaper",
+ "objects" : 
+             # TBC
+             {"spanner" : {"name": ...}}
+}
