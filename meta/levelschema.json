@@ -4,6 +4,21 @@
  "photo"   : "path/to/image for level",
  "text"    : "article for newspaper",
  "objects" : 
-             # TBC
-             {"spanner" : {"name": ...}}
+              #unique-id.  
+             ["spanner" : {"name"       : "spanner",
+                           "collectable": True,
+                           "location"   : "bench",
+                           "position"   : "ontop",
+                           "description": "a heavy spanner",
+			  }, 
+
+              "bench"   : {"name"       : "wooden bench",
+                           "location"   : "darkroom",
+                           "position"   : "inside",
+                           "description": "an old wooden desk",
+                          },
+              "darkroom": {"name"       : "dark room",
+                           # no location root object.
+                           "description": "a dark dusty room",
+                          }
 }

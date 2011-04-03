@@ -4,6 +4,7 @@
 lib/*
 bin/*
 include/*
+build/*
 .Python
 
 # ignore compiled python code
