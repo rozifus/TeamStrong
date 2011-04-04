@@ -5,7 +5,7 @@
              {"spanner" : {"name"       : "spanner",
                            "collectable": true,
                            "location"   : "bench",
-                           "position"   : "ontop",
+                           "position"   : "inside",
                            "description": "a heavy spanner"
                           },
               "bench"   : {"name"       : "wooden bench",
