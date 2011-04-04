@@ -44,7 +44,10 @@
                            "convos"     : 
                                     ["intro",
                                      cycle(["still", "tired"])
-                                    ]
+                                    ],
+
+                           # questions you may ask jason.
+                           "qs"         : ["howru", "look1"],
                           },
 	     },
               
@@ -60,6 +63,31 @@
               "thankyou": ["Thank you so much",
                            "I needed that for a project"
                            "that I am working on."],
+             },
+
+ "questions" : 
+             # the initial available questions are referred to in
+             # the character "qs" field. "look1" is an example that
+             # allows you to unlock new ("n") questions.
+             # thus this is a tree-like structure.
+
+             # some branches should be capable of giving a reward.
+             # at the moment I'm not sure how best to do that.
+             # maybe with a 'g' give parameter.
+             
+             {"howru": 
+                      {"q": "How are you?",
+                       "a": "fine"},
+              "look1":
+                      {"q": "What are you looking for?",
+                       "a": "I am looking for my tool.",
+                       "n": ["look2", "look3"]},
+              "look2":
+                      {"q": "How big is it?",
+                       "a": "about the size of a spanner",},
+              "look3":
+                      {"q": "Where did you last see it?",
+                       "a": ("I saw it on the %(name)s", "bench")},
              },
 						
  "rewards"   :
