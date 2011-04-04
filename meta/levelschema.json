@@ -12,7 +12,7 @@
 
               #unique-id.  
              {"spanner" : {"name"       : "spanner",
-                           "collectable": True,
+                           "collectable": true,
                            "location"   : "bench",
                            "position"   : "ontop",
                            "description": "a heavy spanner",
@@ -28,7 +28,7 @@
                           },
               "jason"   : {"name"       : "Dr. Jason",
                            "location"   : "darkroom",
-                           "human"      : True,
+                           "human"      : true,
                            "position"   : "inside",
                            "description": "A pleasant man"},
              },

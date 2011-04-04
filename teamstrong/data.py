@@ -11,17 +11,19 @@ pyglet.resource search path.
 import os
 
 data_py = os.path.abspath(os.path.dirname(__file__))
-data_dir = os.path.normpath(os.path.join(data_py, '..', 'data'))
 
-def filepath(filename):
+def _dir(dirname):
+    return os.path.normpath(os.path.join(data_py, '..', dirname))
+
+def filepath(filename, dirname="data"):
     '''Determine the path to a file in the data directory.
     '''
-    return os.path.join(data_dir, filename)
+    return os.path.join(_dir(dirname), filename)
 
-def load(filename, mode='rb'):
+def load(filename, mode='rb', dirname="data"):
     '''Open a file in the data directory.
 
     "mode" is passed as the second arg to open().
     '''
-    return open(os.path.join(data_dir, filename), mode)
+    return open(os.path.join(_dir(dirname), filename), mode)
 
