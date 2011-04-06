@@ -72,7 +72,8 @@ def boundedby(coords, rect):
 # a simple console where user can enter text, and responses are
 # sent back.
 
-def draw_box(x, y, width, height):
+def draw_box(obj):
+    x, y, width, height = obj.rect
     left = (x, y, x, y+height)
     right = (x+width,y,x+width,y+height)
     bottom = (x,y,x+width,y)
@@ -80,14 +81,24 @@ def draw_box(x, y, width, height):
     pyglet.graphics.draw(8, pyglet.gl.GL_LINES,
             ('v2i', left+right+bottom+top))
 
-objects = [InteractiveElem([100, 50, 400, 60])]
+objects = [
+        InteractiveElem([100, 50, 400, 60]),
+                                
+]
+
+window.batch = pyglet.graphics.Batch()
+document = pyglet.text.document.UnformattedDocument("hello: ")
+layout = pyglet.text.layout.IncrementalTextLayout(
+                document, 380, 60, multiline=False, batch=window.batch)
+layout.x = 110
+layout.y = 50
 
 @window.event
 def on_draw():
     window.clear()
     label.draw()
     for obj in objects:
-        draw_box(*obj.rect)
+        draw_box(obj)
 
 def getapp():
     return pyglet.app

@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+import random
+import math
+
 import pyglet
 from pyglet import window
 from pyglet import clock
 from pyglet import text
-import random
-import math
+
+# utilities for importing data files.
+import data
 
 class Schrocat(window.Window):
 
@@ -32,12 +36,12 @@ class Schrocat(window.Window):
         self.actors.append(self.turret)
     def init_content(self):
         # load turret images, set rotational anchors, store for later
-        frame = pyglet.image.load('frame.png')
+        frame = pyglet.image.load(data.filepath('frame.png'))
         frame.anchor_x = frame.width / 2
         frame.anchor_y = frame.height / 2
         self.images['frame'] = frame
 
-        barrel = pyglet.image.load('barrel.png')
+        barrel = pyglet.image.load(data.filepath('barrel.png'))
         barrel.anchor_x = barrel.width / 2
         barrel.anchor_y = barrel.height / 4
         self.images['barrel'] = barrel
@@ -53,7 +57,7 @@ class Schrocat(window.Window):
 
 			clock.tick()
 			#Gets fps and draw it
-			self.fps_label.text = str(clock.get_fps())
+			self.fps_label.text = "%d" % clock.get_fps()
 			self.fps_label.draw()
 
 			self.flip()
@@ -104,8 +108,6 @@ class Turret(object):
     def draw(self):
         # sprites are drawn directly by the batch
         pass
-
-
 
 if __name__ == "__main__":
     schrocat = Schrocat()
