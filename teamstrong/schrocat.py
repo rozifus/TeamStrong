@@ -34,6 +34,11 @@ class Schrocat(window.Window):
         self.turret = Turret(100, 100, self.batch,
                     self.images['frame'], self.images['barrel'])
         self.actors.append(self.turret)
+
+        self.cat = Cat(300, 300, self.batch,
+                    self.images['catbody'], self.images['cathead'])
+        self.actors.append(self.cat)
+
     def init_content(self):
         # load turret images, set rotational anchors, store for later
         frame = pyglet.image.load(data.filepath('frame.png'))
@@ -45,6 +50,17 @@ class Schrocat(window.Window):
         barrel.anchor_x = barrel.width / 2
         barrel.anchor_y = barrel.height / 4
         self.images['barrel'] = barrel
+
+        cathead = pyglet.image.load(data.filepath('cathead.png'))
+        cathead.anchor_x = cathead.width / 2
+        cathead.anchor_y = cathead.height / 3
+        self.images['cathead'] = cathead
+        
+        catbody = pyglet.image.load(data.filepath('catbody.png'))
+        catbody.anchor_x = catbody.width / 2
+        catbody.anchor_y = catbody.height / 2 
+        self.images['catbody'] = catbody
+
 
     def main_loop(self):
 		clock.set_fps_limit(30)
@@ -81,6 +97,36 @@ class Schrocat(window.Window):
 
     def on_mouse_press(self, x, y, button, modifiers):
         pass
+
+
+class Cat(object):
+    def __init__(self, x, y, batch, body, head):
+        self.x, self.y = x,y
+
+        self.body = pyglet.sprite.Sprite(body, batch=batch)
+        self.head = pyglet.sprite.Sprite(head, batch=batch)
+
+        self.getHeadTilt = self.headTiltGen()
+
+    def update(self):
+        self.body.x, self.body.y = self.x , self.y
+        self.head.x, self.head.y = self.x - 6 , self.y + 10 
+        self.head.rotation = self.getHeadTilt.next()
+        print(self.head.rotation)
+
+    def headTiltGen(self):
+        # a generator for cat's head tilt
+        leftToRight = True
+        rotation = 0.00
+        while 1:
+            if rotation > 10:
+                leftToRight = False
+            elif rotation < -10:
+                leftToRight = True
+            if leftToRight:
+                rotation += 1 
+            else: rotation -= 1 
+            yield rotation 
 
 
 class Turret(object):
