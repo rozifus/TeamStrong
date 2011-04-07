@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import random
 import math
+import itertools
 
 import pyglet
 from pyglet import window
@@ -73,6 +74,9 @@ class Schrocat(window.Window):
         catbody = load_and_anchor('catbody.png', 2, 2)
         self.images['catbody'] = catbody
 
+        gravity = load_and_anchor('gravity.png', 2, 2)
+        self.images['gravity'] = gravity
+
     def main_loop(self):
         clock.set_fps_limit(30)
 
@@ -111,8 +115,25 @@ class Schrocat(window.Window):
         pass
 
     def on_mouse_press(self, x, y, button, modifiers):
-        """Create a new bullet at the turret."""
+        """
+        Create a new bullet at the turret. (LEFT CLICK)
+        Create a new gravity well. (RIGHT CLICK).
+        """
 
+        # left click make a bullet.
+        if button == 1:
+            self._bullet(x, y)
+        elif button == 4:
+            self._gravity(x, y)
+        
+    def _gravity(self, x, y):
+        """Make a gravity well near the click location."""
+        gravity = make_gravity(x, y, self.batch, self.images['gravity'],
+                                self.space)
+        self.actors.append(gravity)
+
+    def _bullet(self, x, y):
+        """Make a bullet and add it near the turret."""
         x, y = self.turret.tip
         angle = self.turret.rotation
 
@@ -127,12 +148,14 @@ class Schrocat(window.Window):
 
         self.actors.append(ball)
 
-
 def make_ball(x, y, batch, image, space, mass=1, radius=5):
     return Ball(mass, radius, x, y, batch, image, space)
 
-class Ball(object):
-    """A ball shot from the cannon."""
+def make_gravity(x, y, batch, image, space, mass=1e6, radius=50):
+    return Gravity(mass, radius, x, y, batch, image, space)
+
+class PhysicsElem(object):
+    """An object that is Physics aware."""
 
     def __init__(self, mass, radius, x, y, batch, image, space):
 
@@ -164,7 +187,74 @@ class Ball(object):
         """convert body.position co-ords to self.image.x and y coords."""
         self.image.x = self.x
         self.image.y = self.y
+        self.custom_update()
 
+    def custom_update(self):
+        """
+        Override this to add custom functionality in update.
+        """
+        pass
+
+class Ball(PhysicsElem):
+    """A ball shot from a cannon."""
+
+def get_or_setdefault(obj, attr, default):
+    """
+    Get an attribute from an object, if it doesn't exist set the default
+    attribute on the object.
+
+    """
+    value = getattr(obj, attr, default)
+    setattr(obj, attr, value)
+    return value
+
+class Gravity(PhysicsElem):
+    """A gravitational well."""
+
+    def custom_update(self):
+        """
+        Update rotation so that it is always spinning.
+
+        """
+        # gravity will spin in a random direction for visual gags.
+        direction = get_or_setdefault(self, '_direction',
+                                            random.choice([3, -3]))
+
+        rotator = get_or_setdefault(self, '_rotator',
+                                            make_rotator(direction))
+
+        self.image.rotation = rotator.next()
+
+
+def make_rotator(step=1, lim_left=None, lim_right=None):
+    """
+    returns a generator function that will rotate
+        until it hits left then back until it hits right.
+    args:
+        step: number of degrees to rotate per iteration.
+        lim_left: the counter_clockwise bound angle limit.
+        lim_right: the clockwise bound angle limit.
+    """
+    # two rotators could be made, one with limits one without.
+    if lim_left is not None and lim_right is not None:
+        def rotator():
+            rotation = 0
+            direction = 1 * step
+            while 1:
+                if lim_left > rotation or lim_right < rotation:
+                    direction = direction * -1
+
+                rotation += direction
+                yield rotation
+
+        return rotator()
+
+    # a simple rotator that only goes in one direction.
+    def rotator():
+        counter = itertools.count()
+        while 1:
+            yield (counter.next() * step % 360)
+    return rotator()
 
 class Cat(object):
     def __init__(self, x, y, batch, body, head):
@@ -173,27 +263,12 @@ class Cat(object):
         self.body = pyglet.sprite.Sprite(body, batch=batch)
         self.head = pyglet.sprite.Sprite(head, batch=batch)
 
-        self.getHeadTilt = self.headTiltGen()
+        self.getHeadTilt = make_rotator(lim_left=-10, lim_right=10)
 
     def update(self):
         self.body.x, self.body.y = self.x , self.y
         self.head.x, self.head.y = self.x - 6 , self.y + 10 
         self.head.rotation = self.getHeadTilt.next()
-
-    def headTiltGen(self):
-        # a generator for cat's head tilt
-        leftToRight = True
-        rotation = 0.00
-        while 1:
-            if rotation > 10:
-                leftToRight = False
-            elif rotation < -10:
-                leftToRight = True
-            if leftToRight:
-                rotation += 1 
-            else: rotation -= 1 
-            yield rotation 
-
 
 class Turret(object):
     length = 60
