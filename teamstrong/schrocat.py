@@ -8,6 +8,7 @@ import pyglet
 from pyglet import window
 from pyglet import clock
 from pyglet import text
+import pymunk
 
 # utilities for importing data files.
 import data
@@ -41,6 +42,11 @@ class Schrocat(window.Window):
 
     def init_content(self):
         # load turret images, set rotational anchors, store for later
+        pymunk.init_pymunk()
+
+        self.space = pymunk.Space()
+        self.space.gravity = (0, 0)
+
         frame = pyglet.image.load(data.filepath('frame.png'))
         frame.anchor_x = frame.width / 2
         frame.anchor_y = frame.height / 2
@@ -63,25 +69,29 @@ class Schrocat(window.Window):
 
 
     def main_loop(self):
-		clock.set_fps_limit(30)
+        clock.set_fps_limit(30)
 
-		while not self.has_exit:
-			self.dispatch_events()
-			self.update()
-			self.clear()
-			self.draw()
+        while not self.has_exit:
 
-			clock.tick()
-			#Gets fps and draw it
-			self.fps_label.text = "%d" % clock.get_fps()
-			self.fps_label.draw()
+            self.dispatch_events()
+            self.update()
+            self.clear()
+            self.draw()
 
-			self.flip()
+            # pymunk space update. updates position of all children.
+            self.space.step(1/30.0)
+
+            clock.tick()
+            #Gets fps and draw it
+            self.fps_label.text = "%d" % clock.get_fps()
+            self.fps_label.draw()
+
+            self.flip()
 
     def update(self):
         # update anything in the actorlist, turrets, cats, etc
-		for actor in self.actors:
-			actor.update()
+        for actor in self.actors:
+            actor.update()
 
     def draw(self):
         self.batch.draw()
@@ -154,8 +164,4 @@ class Turret(object):
     def draw(self):
         # sprites are drawn directly by the batch
         pass
-
-if __name__ == "__main__":
-    schrocat = Schrocat()
-    schrocat.main_loop()
 
