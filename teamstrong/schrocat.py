@@ -14,6 +14,8 @@ import pymunk
 # utilities for importing data files.
 import data
 
+from constants import G, FUDGE
+
 #----------------------------------------------------------------
 # Game in an object. Seriously the whole game is in Schrocat.
 
@@ -129,10 +131,16 @@ class Schrocat(window.Window):
         elif button == 4:
             self._gravity(x, y)
         
+    @property
+    def gravities(self):
+        """Return a list of all gravities."""
+        return filter(lambda s: s.__class__.__name__ == 'Gravity', self.actors)
+
     def _gravity(self, x, y):
         """Make a gravity well near the click location."""
         gravity = make_gravity(x, y, self.batch, self.images['gravity'],
                                 self.space)
+        gravity.parent = self
         self.actors.append(gravity)
 
     def _bullet(self, x, y):
@@ -148,6 +156,7 @@ class Schrocat(window.Window):
         ball = make_ball(x, y, self.batch, self.images['ball'],
                         self.space)
         ball.velocity = (velx, vely)
+        ball.parent = self
 
         self.actors.append(ball)
 
@@ -159,6 +168,7 @@ class PhysicsElem(object):
 
     def __init__(self, mass, radius, x, y, batch, image, space):
 
+        self.mass = mass
         self.image = pyglet.sprite.Sprite(image, batch=batch)
 
         inertia = pymunk.moment_for_circle(mass, 0, radius)
@@ -183,6 +193,14 @@ class PhysicsElem(object):
     def velocity(self, value):
         self.body.velocity = value
 
+    @property
+    def force(self):
+        return self.body.force
+
+    @force.setter
+    def force(self, value):
+        self.body._set_force(value)
+
     def update(self):
         """convert body.position co-ords to self.image.x and y coords."""
         self.image.x = self.x
@@ -197,6 +215,20 @@ class PhysicsElem(object):
 
 class Ball(PhysicsElem):
     """A ball shot from a cannon."""
+
+    def custom_update(self):
+        """
+        Find the net force from all of the gravities to me!
+        """
+        gravities = self.parent.gravities
+
+        forcex,forcey = 0,0
+        for gravity in gravities:
+            _forcex, _forcey = gravity.force_on(self)
+            forcex += _forcex
+            forcey += _forcey
+
+        self.force = (forcex, forcey)
 
 class Gravity(PhysicsElem):
     """A gravitational well."""
@@ -215,6 +247,16 @@ class Gravity(PhysicsElem):
 
         self.image.rotation = rotator.next()
 
+    def force_on(self, obj):
+        """
+        Returns the force on an object that defines x and y properties.
+
+        """
+        force = G * FUDGE * self.mass * obj.mass / distance(self, obj) ** 2
+        # angle from ball to this gravity.
+        angle = angle_between(obj, self)
+
+        return force * math.cos(angle), force * math.sin(angle)
 
 class Cat(object):
     def __init__(self, x, y, batch, body, head):
@@ -330,4 +372,19 @@ def make_rotator(step=1, lim_left=None, lim_right=None):
             yield (counter.next() * step % 360)
     return rotator()
 
+def distance(left, right):
+    """
+    Return the distance between the left and right objects.
 
+    """
+    return math.hypot(left.x - right.x, left.y - right.y)
+
+def angle_between(center, other):
+    """
+    Find the radian angle from the center object to the other object.
+
+    """
+    x = other.x - center.x
+    y = other.y - center.y
+
+    return math.atan2(y, x)
