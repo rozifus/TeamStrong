@@ -14,6 +14,9 @@ import pymunk
 # utilities for importing data files.
 import data
 
+#----------------------------------------------------------------
+# Game in an object. Seriously the whole game is in Schrocat.
+
 class Schrocat(window.Window):
 
     def __init__(self, *args, **kwargs):
@@ -148,11 +151,8 @@ class Schrocat(window.Window):
 
         self.actors.append(ball)
 
-def make_ball(x, y, batch, image, space, mass=1, radius=5):
-    return Ball(mass, radius, x, y, batch, image, space)
-
-def make_gravity(x, y, batch, image, space, mass=1e6, radius=50):
-    return Gravity(mass, radius, x, y, batch, image, space)
+#---------------------------------------------------------------------
+# Game objects.
 
 class PhysicsElem(object):
     """An object that is Physics aware."""
@@ -198,16 +198,6 @@ class PhysicsElem(object):
 class Ball(PhysicsElem):
     """A ball shot from a cannon."""
 
-def get_or_setdefault(obj, attr, default):
-    """
-    Get an attribute from an object, if it doesn't exist set the default
-    attribute on the object.
-
-    """
-    value = getattr(obj, attr, default)
-    setattr(obj, attr, value)
-    return value
-
 class Gravity(PhysicsElem):
     """A gravitational well."""
 
@@ -225,36 +215,6 @@ class Gravity(PhysicsElem):
 
         self.image.rotation = rotator.next()
 
-
-def make_rotator(step=1, lim_left=None, lim_right=None):
-    """
-    returns a generator function that will rotate
-        until it hits left then back until it hits right.
-    args:
-        step: number of degrees to rotate per iteration.
-        lim_left: the counter_clockwise bound angle limit.
-        lim_right: the clockwise bound angle limit.
-    """
-    # two rotators could be made, one with limits one without.
-    if lim_left is not None and lim_right is not None:
-        def rotator():
-            rotation = 0
-            direction = 1 * step
-            while 1:
-                if lim_left > rotation or lim_right < rotation:
-                    direction = direction * -1
-
-                rotation += direction
-                yield rotation
-
-        return rotator()
-
-    # a simple rotator that only goes in one direction.
-    def rotator():
-        counter = itertools.count()
-        while 1:
-            yield (counter.next() * step % 360)
-    return rotator()
 
 class Cat(object):
     def __init__(self, x, y, batch, body, head):
@@ -316,4 +276,58 @@ class Turret(object):
     def draw(self):
         # sprites are drawn directly by the batch
         pass
+
+#----------------------------------------------------------
+# Object factory functions.
+
+def make_ball(x, y, batch, image, space, mass=1, radius=5):
+    return Ball(mass, radius, x, y, batch, image, space)
+
+def make_gravity(x, y, batch, image, space, mass=1e6, radius=50):
+    return Gravity(mass, radius, x, y, batch, image, space)
+
+
+#-----------------------------------------------------------
+# Utility functions.
+
+def get_or_setdefault(obj, attr, default):
+    """
+    Get an attribute from an object, if it doesn't exist set the default
+    attribute on the object.
+
+    """
+    value = getattr(obj, attr, default)
+    setattr(obj, attr, value)
+    return value
+
+def make_rotator(step=1, lim_left=None, lim_right=None):
+    """
+    returns a generator function that will rotate
+        until it hits left then back until it hits right.
+    args:
+        step: number of degrees to rotate per iteration.
+        lim_left: the counter_clockwise bound angle limit.
+        lim_right: the clockwise bound angle limit.
+    """
+    # two rotators could be made, one with limits one without.
+    if lim_left is not None and lim_right is not None:
+        def rotator():
+            rotation = 0
+            direction = 1 * step
+            while 1:
+                if lim_left > rotation or lim_right < rotation:
+                    direction = direction * -1
+
+                rotation += direction
+                yield rotation
+
+        return rotator()
+
+    # a simple rotator that only goes in one direction.
+    def rotator():
+        counter = itertools.count()
+        while 1:
+            yield (counter.next() * step % 360)
+    return rotator()
+
 
