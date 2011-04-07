@@ -36,6 +36,7 @@ class Schrocat(window.Window):
                     self.images['frame'], self.images['barrel'])
         self.actors.append(self.turret)
 
+        # schrocat live on.
         self.cat = Cat(300, 300, self.batch,
                     self.images['catbody'], self.images['cathead'])
         self.actors.append(self.cat)
@@ -47,26 +48,30 @@ class Schrocat(window.Window):
         self.space = pymunk.Space()
         self.space.gravity = (0, 0)
 
-        frame = pyglet.image.load(data.filepath('frame.png'))
-        frame.anchor_x = frame.width / 2
-        frame.anchor_y = frame.height / 2
+        def load_and_anchor(filename, anchor_x, anchor_y):
+            """
+            Returns a pyglet image whose x and y anchor points
+            are set as a fraction of total width and height.
+            """
+            image = pyglet.image.load(data.filepath(filename))
+            image.anchor_x = image.width // anchor_x
+            image.anchor_y = image.height // anchor_y
+            return image
+
+        ball = load_and_anchor('ball.png', 2, 2)
+        self.images['ball'] = ball
+
+        frame = load_and_anchor('frame.png', 2, 2)
         self.images['frame'] = frame
 
-        barrel = pyglet.image.load(data.filepath('barrel.png'))
-        barrel.anchor_x = barrel.width / 2
-        barrel.anchor_y = barrel.height / 4
+        barrel = load_and_anchor('barrel.png', 2, 4)
         self.images['barrel'] = barrel
 
-        cathead = pyglet.image.load(data.filepath('cathead.png'))
-        cathead.anchor_x = cathead.width / 2
-        cathead.anchor_y = cathead.height / 3
+        cathead = load_and_anchor('cathead.png', 2, 3)
         self.images['cathead'] = cathead
         
-        catbody = pyglet.image.load(data.filepath('catbody.png'))
-        catbody.anchor_x = catbody.width / 2
-        catbody.anchor_y = catbody.height / 2 
+        catbody = load_and_anchor('catbody.png', 2, 2)
         self.images['catbody'] = catbody
-
 
     def main_loop(self):
         clock.set_fps_limit(30)
@@ -106,7 +111,59 @@ class Schrocat(window.Window):
         pass
 
     def on_mouse_press(self, x, y, button, modifiers):
-        pass
+        """Create a new bullet at the turret."""
+
+        x, y = self.turret.tip
+        angle = self.turret.rotation
+
+        speed = 100
+        # create a crude velocity.
+        velx = math.sin(angle) * speed
+        vely = math.cos(angle) * speed
+
+        ball = make_ball(x, y, self.batch, self.images['ball'],
+                        self.space)
+        ball.velocity = (velx, vely)
+
+        self.actors.append(ball)
+
+
+def make_ball(x, y, batch, image, space, mass=1, radius=5):
+    return Ball(mass, radius, x, y, batch, image, space)
+
+class Ball(object):
+    """A ball shot from the cannon."""
+
+    def __init__(self, mass, radius, x, y, batch, image, space):
+
+        self.image = pyglet.sprite.Sprite(image, batch=batch)
+
+        inertia = pymunk.moment_for_circle(mass, 0, radius)
+        self.body = body = pymunk.Body(mass, inertia)
+        body.position = x, y
+        shape = pymunk.Circle(body, radius)
+        space.add(body, shape)
+
+    @property
+    def x(self):
+        return self.body.position.x
+
+    @property
+    def y(self):
+        return self.body.position.y
+
+    @property
+    def velocity(self):
+        return self.body.velocity
+
+    @velocity.setter
+    def velocity(self, value):
+        self.body.velocity = value
+
+    def update(self):
+        """convert body.position co-ords to self.image.x and y coords."""
+        self.image.x = self.x
+        self.image.y = self.y
 
 
 class Cat(object):
@@ -122,7 +179,6 @@ class Cat(object):
         self.body.x, self.body.y = self.x , self.y
         self.head.x, self.head.y = self.x - 6 , self.y + 10 
         self.head.rotation = self.getHeadTilt.next()
-        print(self.head.rotation)
 
     def headTiltGen(self):
         # a generator for cat's head tilt
@@ -140,6 +196,8 @@ class Cat(object):
 
 
 class Turret(object):
+    length = 60
+
     def __init__(self, x, y, batch, frame, barrel):
         self.x, self.y = x,y
 
@@ -154,7 +212,26 @@ class Turret(object):
             if self.barrel.rotation < 180:
                 self.barrel.rotation = 90
             else: self.barrel.rotation = 270
-        print(self.barrel.rotation)
+
+    @property
+    def tip(self):
+        """
+        Return the x, y co-ordinates of the tip of the barrel.
+        Uses an estimated length of the barrel based on size of the image.
+
+        """
+        # in degrees clockwise from vertical.
+        rot = self.rotation
+
+        # x + delta_x = x + sin(theta) * L
+        x = self.x + math.sin(rot) * self.length
+        y = self.y + math.cos(rot) * self.length
+        return x, y
+
+    @property
+    def rotation(self):
+        """return rotation in radians."""
+        return math.radians(self.barrel.rotation)
 
     def update(self):
         # just in case the turret ever needs to move
