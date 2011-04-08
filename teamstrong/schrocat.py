@@ -160,15 +160,26 @@ class Schrocat(window.Window):
 
     def _bullet(self, x, y):
         """Make a bullet and add it near the turret."""
-        x, y = self.turret.tip
+        xTip, yTip = self.turret.tip
         angle = self.turret.rotation
+        
+        minLaunchVel = 10
+        maxLaunchVel = 600
+        refDist = 250.0
 
-        speed = 100
+        # Velocity is dependent on the distance the pointer is from the turret.
+        # As this is a ratio, I removed the sqrt and squared the distance it
+        # will is divided by.
+        speed = maxLaunchVel * ((x-xTip)**2 + (y-yTip)**2)/ refDist**2
+        if speed < minLaunchVel:
+            speed = minLaunchVel
+        elif speed > maxLaunchVel:
+            speed = maxLaunchVel
         # create a crude velocity.
         velx = math.sin(angle) * speed
         vely = math.cos(angle) * speed
 
-        ball = make_ball(x, y, self.batch, self.images['ball'],
+        ball = make_ball(xTip, yTip, self.batch, self.images['ball'],
                         self.space)
         ball.velocity = (velx, vely)
         ball.parent = self
