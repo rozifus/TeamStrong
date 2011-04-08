@@ -9,6 +9,7 @@ import pyglet
 from pyglet import window
 from pyglet import clock
 from pyglet import text
+from pyglet import gl
 import pymunk
 
 # utilities for importing data files.
@@ -27,6 +28,7 @@ class Schrocat(window.Window):
         self.labels = {}
         self.actors = []
         self.batch = pyglet.graphics.Batch()
+        self.interfaces = []
 
         # load our images
         self.init_content()
@@ -46,6 +48,9 @@ class Schrocat(window.Window):
         self.cat = Cat(300, 300, self.batch,
                     self.images['catbody'], self.images['cathead'])
         self.actors.append(self.cat)
+
+        self.ballMeter = Meter(50, 50, 100, 100, "min", "max", 10)
+        self.interfaces.append(self.ballMeter)
 
     def init_content(self):
         # load turret images, set rotational anchors, store for later
@@ -109,6 +114,8 @@ class Schrocat(window.Window):
 
     def draw(self):
         self.batch.draw()
+        for i in self.interfaces:
+            i.draw()
 
     """ Event Handlers """
 
@@ -327,6 +334,41 @@ def make_ball(x, y, batch, image, space, mass=1, radius=5):
 
 def make_gravity(x, y, batch, image, space, mass=1e6, radius=50):
     return Gravity(mass, radius, x, y, batch, image, space)
+
+#-----------------------------------------------------------
+# Interface objects.
+
+class Meter(object):
+
+    @property
+    def top(self):
+        return self.y + self.height
+
+    @property
+    def bottom(self):
+        return self.y
+
+    @property
+    def left(self):
+        return self.x
+
+    @property
+    def right(self):
+        return self.x + self.width
+
+    def __init__(self, x, y, width, height,
+                 mincolor, maxcolor, maxPoints, initPoints=None, visible=True):
+        self.x, self.y = x,y
+        self.width, self.height = width, height
+        self.maxPoints = maxPoints
+        self.mincolor, self.maxcolor = mincolor, maxcolor
+        if initPoints: self.initPoints = initPoints
+        else: self.initPoints = maxPoints
+        self.visible = visible
+
+    def update(self):
+
+    def draw(self):
 
 
 #-----------------------------------------------------------
