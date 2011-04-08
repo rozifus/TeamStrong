@@ -60,6 +60,15 @@ class Schrocat(window.Window):
         self.space = pymunk.Space()
         self.space.gravity = (0, 0)
 
+        # This bit of code makes the balls pass through the gravity wells.
+        # There are more efficient ways of doing this but I was experimenting
+        # with collision handlers.
+        def begin(space, arbiter):
+            return False
+
+        self.space.add_collision_handler(GRAVITY_TYPE, BALL_TYPE, 
+                                            begin, None, None, None)
+
         def load_and_anchor(filename, anchor_x, anchor_y):
             """
             Returns a pyglet image whose x and y anchor points
