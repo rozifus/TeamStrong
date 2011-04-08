@@ -300,6 +300,7 @@ class PhysicsElem(object):
     def hit(self, other):
         """Returns True if this x, y pair is inside the other."""
         return (self.x, self.y) in other
+
     @property
     def collision_type(self):
         return self.shape._get_collision_type
