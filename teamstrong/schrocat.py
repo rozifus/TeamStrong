@@ -15,7 +15,7 @@ import pymunk
 # utilities for importing data files.
 import data
 
-from constants import G, FUDGE
+from constants import G, FUDGE, DEFAULT_TYPE, BALL_TYPE, GRAVITY_TYPE, CAT_TYPE
 
 #----------------------------------------------------------------
 # Game in an object. Seriously the whole game is in Schrocat.
@@ -200,7 +200,7 @@ class PhysicsElem(object):
         inertia = pymunk.moment_for_circle(mass, 0, radius)
         self.body = body = pymunk.Body(mass, inertia)
         body.position = x, y
-        shape = pymunk.Circle(body, radius)
+        self.shape = shape = pymunk.Circle(body, radius)
         space.add(body, shape)
 
     @property
@@ -227,6 +227,14 @@ class PhysicsElem(object):
     def force(self, value):
         self.body._set_force(value)
 
+    @property
+    def collision_type(self):
+        return self.shape._get_collision_type
+
+    @collision_type.setter
+    def collision_type(self, value):
+        self.shape._set_collision_type(value)
+
     def update(self):
         """convert body.position co-ords to self.image.x and y coords."""
         self.image.x = self.x
@@ -241,6 +249,10 @@ class PhysicsElem(object):
 
 class Ball(PhysicsElem):
     """A ball shot from a cannon."""
+
+    def __init__(self, mass, radius, x, y, batch, image, space):
+        PhysicsElem.__init__(self, mass, radius, x, y, batch, image, space)
+        self.collision_type = BALLTYPE
 
     def custom_update(self):
         """
@@ -258,6 +270,10 @@ class Ball(PhysicsElem):
 
 class Gravity(PhysicsElem):
     """A gravitational well."""
+
+    def __init__(self, mass, radius, x, y, batch, image, space):
+        PhysicsElem.__init__(self, mass, radius, x, y, batch, image, space)
+        self.collision_type = GRAVITYTYPE
 
     def custom_update(self):
         """
