@@ -7,6 +7,7 @@ FUDGE = 15e9
 # collision_types
 #   These are the constants by which the different types of physics objects
 #   can be refered to.
-BALLTYPE = 1
-GRAVITYTYPE = 2
-CATTYPE = 3
+DEFAULT_TYPE = 0
+BALL_TYPE = 1
+GRAVITY_TYPE = 2
+CAT_TYPE = 3

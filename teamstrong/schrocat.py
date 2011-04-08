@@ -252,7 +252,7 @@ class Ball(PhysicsElem):
 
     def __init__(self, mass, radius, x, y, batch, image, space):
         PhysicsElem.__init__(self, mass, radius, x, y, batch, image, space)
-        self.collision_type = BALLTYPE
+        self.collision_type = BALL_TYPE
 
     def custom_update(self):
         """
@@ -273,7 +273,7 @@ class Gravity(PhysicsElem):
 
     def __init__(self, mass, radius, x, y, batch, image, space):
         PhysicsElem.__init__(self, mass, radius, x, y, batch, image, space)
-        self.collision_type = GRAVITYTYPE
+        self.collision_type = GRAVITY_TYPE
 
     def custom_update(self):
         """
