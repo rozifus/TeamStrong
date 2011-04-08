@@ -49,7 +49,8 @@ class Schrocat(window.Window):
                     self.images['catbody'], self.images['cathead'])
         self.actors.append(self.cat)
 
-        self.ballMeter = Meter(50, 50, 100, 100, "min", "max", 10)
+        self.ballMeter = Meter(10, 80, 50, 340, 
+                            (1.0,0.0,0.0), (0.0,1.0,0.0), 10, 5, True)
         self.interfaces.append(self.ballMeter)
 
     def init_content(self):
@@ -112,8 +113,12 @@ class Schrocat(window.Window):
         for actor in self.actors:
             actor.update()
 
+        for interface in self.interfaces:
+            interface.update()
+
     def draw(self):
         self.batch.draw()
+
         for i in self.interfaces:
             i.draw()
 
@@ -134,9 +139,12 @@ class Schrocat(window.Window):
 
         # left click make a bullet.
         if button == 1:
-            self._bullet(x, y)
+            if self.ballMeter.remove(1):
+                self._bullet(x, y)
+            
         elif button == 4:
             self._gravity(x, y)
+            self.ballMeter.add(3)
         
     @property
     def gravities(self):
@@ -342,7 +350,7 @@ class Meter(object):
 
     @property
     def top(self):
-        return self.y + self.height
+        return self.y + self.height*self.pointpc
 
     @property
     def bottom(self):
@@ -357,18 +365,61 @@ class Meter(object):
         return self.x + self.width
 
     def __init__(self, x, y, width, height,
-                 mincolor, maxcolor, maxPoints, initPoints=None, visible=True):
+                 minColor, maxColor, maxPoints, 
+                 initPoints=None, gradient=False, visible=True):
         self.x, self.y = x,y
         self.width, self.height = width, height
         self.maxPoints = maxPoints
-        self.mincolor, self.maxcolor = mincolor, maxcolor
-        if initPoints: self.initPoints = initPoints
-        else: self.initPoints = maxPoints
+        self.minColor, self.maxColor = minColor, maxColor
+        if initPoints: self.points = initPoints
+        else: self.points = maxPoints
         self.visible = visible
+        self.pointpc = 0.0 # is fraction of 1, dispite pc (percent)
+        self.color = (1.0, 1.0, 1.0)
+        self.gradient = gradient
+        self.update()
 
     def update(self):
+        # get points as percentage of maximum
+        self.pointpc = float(self.points) / float(self.maxPoints)
+        # produce intermediate color
+        self.color = (self.minColor[0]*(1-self.pointpc) + \
+                self.maxColor[0]*self.pointpc,
+                self.minColor[1]*(1-self.pointpc) + \
+                self.maxColor[1]*self.pointpc,
+                self.minColor[2]*(1-self.pointpc) + \
+                self.maxColor[2]*self.pointpc )
+        # not sure if necessary, but in case of rounding errors            
+        for i,c in enumerate(self.color):
+            if c > 1.0: self.color[i] = 1.0
+            elif c < 0.0: self.color[i] = 0.0
 
     def draw(self):
+        # draw the rect
+        if self.visible:
+            gl.glLoadIdentity()
+            gl.glBegin(gl.GL_QUADS)
+            gl.glColor3f(*self.color)
+            gl.glVertex2f(self.left, self.top)
+            gl.glVertex2f(self.right, self.top)
+            if self.gradient: gl.glColor3f(*self.minColor)
+            gl.glVertex2f(self.right, self.bottom)
+            gl.glVertex2f(self.left, self.bottom)
+            gl.glEnd()
+
+    def add(self, qty):
+        self.points += qty
+        if self.points > self.maxPoints:
+            self.points = self.maxPoints
+
+    def remove(self, qty):
+        if self.points - qty < 0:
+            return False
+        else:
+            self.points -= qty
+            return True
+        print(self.top, self.right, self.bottom, self.left)
+
 
 
 #-----------------------------------------------------------
