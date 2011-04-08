@@ -4,6 +4,7 @@ from __future__ import print_function
 import random
 import math
 import itertools
+import collections
 
 import pyglet
 from pyglet import window
@@ -16,6 +17,32 @@ import pymunk
 import data
 
 from constants import G, FUDGE
+
+#----------------------------------------------------------------
+# Signal registry, handles callbacks between distant objects.
+
+# list of signals for easy reference:
+
+# 'shoot': a ball is shot.
+# 'cathit': a cat got hit by a ball.
+# 'catdead': a cat is dead.
+
+_register = collections.defaultdict(list)
+
+def register(name, callback):
+    """Register a callback function for a signal called 'name'"""
+
+    if callback in _register[name]:
+        # bugger off, you have registered once for this signal before.
+        return
+
+    _register[name].append(callback)
+
+def signal(name, *args, **kwargs):
+    """Signal to all callback functions listening to 'name'."""
+
+    for fn in _register[name]:
+        fn(*args, **kwargs)
 
 #----------------------------------------------------------------
 # Game in an object. Seriously the whole game is in Schrocat.
@@ -49,9 +76,40 @@ class Schrocat(window.Window):
                     self.images['catbody'], self.images['cathead'])
         self.actors.append(self.cat)
 
-        self.ballMeter = Meter(10, 80, 50, 340, 
+        def make_callback_for(obj):
+
+            def someonehit(*args, **kwargs):
+                """ball or cat needs to remove 1 from meter qty."""
+                obj.remove(qty=1)
+            return someonehit
+
+        self.ballMeter = Meter(10, 80, 50, 340,
                             (1.0,0.0,0.0), (0.0,1.0,0.0), 10, 5, True)
+        self.catMeter = Meter(580, 80, 50, 340,
+                            (1.0,0.0,0.0), (0.0,1.0,0.0), 10, 5, True)
+
         self.interfaces.append(self.ballMeter)
+        self.interfaces.append(self.catMeter)
+
+        # now make some callbacks to remove meter points when hit.
+        callback = make_callback_for(self.ballMeter)
+        register('shoot', callback)
+
+        callback = make_callback_for(self.catMeter)
+        register('cathit', callback)
+
+        register('kill', self.remove_object)
+
+    def remove_object(self, obj, *args, **kwargs):
+        """
+        try to remove this object and pretend it never existed.
+
+        """
+        try:
+            self.actors.remove(obj)
+        except ValueError:
+            # puzzled. who did you want me to remove?
+            pass 
 
     def init_content(self):
         # load turret images, set rotational anchors, store for later
@@ -139,7 +197,10 @@ class Schrocat(window.Window):
 
         # left click make a bullet.
         if button == 1:
-            if self.ballMeter.remove(1):
+
+            if self.ballMeter.active:
+                # signal that we are making a bullet.
+                signal('shoot')
                 self._bullet(x, y)
             
         elif button == 4:
@@ -170,11 +231,11 @@ class Schrocat(window.Window):
         # Velocity is dependent on the distance the pointer is from the turret.
         # As this is a ratio, I removed the sqrt and squared the distance it
         # will is divided by.
-        speed = maxLaunchVel * ((x-xTip)**2 + (y-yTip)**2)/ refDist**2
-        if speed < minLaunchVel:
-            speed = minLaunchVel
-        elif speed > maxLaunchVel:
-            speed = maxLaunchVel
+
+        _ = CrudeVec
+        speed = maxLaunchVel * distance(_(x, y), _(xTip, yTip)) / refDist
+        speed = clip(maxLaunchVel, minLaunchVel)(speed)
+
         # create a crude velocity.
         velx = math.sin(angle) * speed
         vely = math.cos(angle) * speed
@@ -227,6 +288,10 @@ class PhysicsElem(object):
     def force(self, value):
         self.body._set_force(value)
 
+    def hit(self, other):
+        """Returns True if this x, y pair is inside the other."""
+        return (self.x, self.y) in other
+
     def update(self):
         """convert body.position co-ords to self.image.x and y coords."""
         self.image.x = self.x
@@ -239,12 +304,18 @@ class PhysicsElem(object):
         """
         pass
 
+    def __contains__(self, x_y):
+        return self.body.point_query(x_y)
+
+
 class Ball(PhysicsElem):
     """A ball shot from a cannon."""
 
     def custom_update(self):
         """
         Find the net force from all of the gravities to me!
+
+        Then work out if I have hit a cat or something...
         """
         gravities = self.parent.gravities
 
@@ -256,6 +327,12 @@ class Ball(PhysicsElem):
 
         self.force = (forcex, forcey)
 
+        # have I hit a cat?
+        if self.hit(self.parent.cat):
+            signal('cathit')
+            # well I did. I should surely die now.
+            signal('kill', self)
+            
 class Gravity(PhysicsElem):
     """A gravitational well."""
 
@@ -294,9 +371,23 @@ class Cat(object):
         self.getHeadTilt = make_rotator(lim_left=-10, lim_right=10)
 
     def update(self):
+        """
+        Updates the head.. 
+        """
         self.body.x, self.body.y = self.x , self.y
         self.head.x, self.head.y = self.x - 6 , self.y + 10 
         self.head.rotation = self.getHeadTilt.next()
+
+    def hit(self, other):
+        """Returns True if this x, y pair is inside the other."""
+        return (self.x, self.y) in other
+
+    def __contains__(self, x_y):
+        x, y = x_y
+        within_x = self.body.x < x and x < self.body.x + self.body.width
+        within_y = self.body.y < y and y < self.body.y + self.body.height
+
+        return within_x and within_y
 
 class Turret(object):
     length = 60
@@ -359,6 +450,24 @@ def make_gravity(x, y, batch, image, space, mass=1e6, radius=50):
 
 class Meter(object):
 
+    def __init__(self, x, y, width, height,
+                 minColor, maxColor, maxPoints,
+                 initPoints=None, gradient=False, visible=True):
+
+        self.x, self.y = x,y
+        self.width, self.height = width, height
+        self.maxPoints = maxPoints
+        self.minColor, self.maxColor = minColor, maxColor
+        self.points = initPoints or maxPoints
+        self.visible = visible
+
+        # a fraction of 1, despite pc (percent)
+        self.pointpc = 0.0 
+        self.color = (1.0, 1.0, 1.0)
+
+        self.gradient = gradient
+        self.update()
+
     @property
     def top(self):
         return self.y + self.height*self.pointpc
@@ -375,63 +484,68 @@ class Meter(object):
     def right(self):
         return self.x + self.width
 
-    def __init__(self, x, y, width, height,
-                 minColor, maxColor, maxPoints, 
-                 initPoints=None, gradient=False, visible=True):
-        self.x, self.y = x,y
-        self.width, self.height = width, height
-        self.maxPoints = maxPoints
-        self.minColor, self.maxColor = minColor, maxColor
-        if initPoints: self.points = initPoints
-        else: self.points = maxPoints
-        self.visible = visible
-        self.pointpc = 0.0 # is fraction of 1, dispite pc (percent)
-        self.color = (1.0, 1.0, 1.0)
-        self.gradient = gradient
-        self.update()
+    @property
+    def active(self):
+        """So long as this baby has 'points' it is active."""
+        return self.points
 
     def update(self):
         # get points as percentage of maximum
-        self.pointpc = float(self.points) / float(self.maxPoints)
+        self.pointpc = float(self.points) / self.maxPoints
+
         # produce intermediate color
-        self.color = (self.minColor[0]*(1-self.pointpc) + \
-                self.maxColor[0]*self.pointpc,
-                self.minColor[1]*(1-self.pointpc) + \
-                self.maxColor[1]*self.pointpc,
-                self.minColor[2]*(1-self.pointpc) + \
-                self.maxColor[2]*self.pointpc )
+        pointpc, inverse = self.pointpc, 1 - self.pointpc
+        self.color = (
+                self.minColor[0] * inverse +
+                self.maxColor[0] * pointpc,
+
+                self.minColor[1] * inverse +
+                self.maxColor[1] * pointpc,
+
+                self.minColor[2] * inverse +
+                self.maxColor[2] * pointpc)
+
         # not sure if necessary, but in case of rounding errors            
-        for i,c in enumerate(self.color):
-            if c > 1.0: self.color[i] = 1.0
-            elif c < 0.0: self.color[i] = 0.0
+        self.color = map(clip(1, 0), self.color)
 
     def draw(self):
+        """
+        Black magic.
+
+        """
         # draw the rect
-        if self.visible:
-            gl.glLoadIdentity()
-            gl.glBegin(gl.GL_QUADS)
-            gl.glColor3f(*self.color)
-            gl.glVertex2f(self.left, self.top)
-            gl.glVertex2f(self.right, self.top)
-            if self.gradient: gl.glColor3f(*self.minColor)
-            gl.glVertex2f(self.right, self.bottom)
-            gl.glVertex2f(self.left, self.bottom)
-            gl.glEnd()
+        if not self.visible:
+            # lol, don't do anything if not visible.
+            return
 
-    def add(self, qty):
-        self.points += qty
-        if self.points > self.maxPoints:
-            self.points = self.maxPoints
+        gl.glLoadIdentity()
+        gl.glBegin(gl.GL_QUADS)
+        gl.glColor3f(*self.color)
+        gl.glVertex2f(self.left, self.top)
+        gl.glVertex2f(self.right, self.top)
 
-    def remove(self, qty):
-        if self.points - qty < 0:
-            return False
-        else:
-            self.points -= qty
-            return True
-        print(self.top, self.right, self.bottom, self.left)
+        if self.gradient:
+            gl.glColor3f(*self.minColor)
 
+        gl.glVertex2f(self.right, self.bottom)
+        gl.glVertex2f(self.left, self.bottom)
+        gl.glEnd()
 
+    def add(self, qty=1):
+        """
+        Add qty to points, but clip at maxPoints.
+
+        """
+        self.points = min(self.points + qty, self.maxPoints)
+
+    def remove(self, qty=1):
+        """
+        Return the number of points after removing qty points.
+
+        Python treats any number of points other than 0 to be True.
+        """
+        self.points = max(self.points - qty, 0)
+        return self.points
 
 #-----------------------------------------------------------
 # Utility functions.
@@ -476,6 +590,19 @@ def make_rotator(step=1, lim_left=None, lim_right=None):
             yield (counter.next() * step % 360)
     return rotator()
 
+class CrudeVec(complex):
+    """
+    a crude (but clever?) Vector.
+    """
+
+    @property
+    def x(self):
+        return self.real
+
+    @property
+    def y(self):
+        return self.imag
+
 def distance(left, right):
     """
     Return the distance between the left and right objects.
@@ -492,3 +619,15 @@ def angle_between(center, other):
     y = other.y - center.y
 
     return math.atan2(y, x)
+
+def clip(upper, lower):
+    """
+    return a function that clips its argument to upper and lower bounds.
+    
+    """
+    def _(value):
+        """Oh so sneaky."""
+        return max(min(upper, value), lower)
+
+    return _
+
