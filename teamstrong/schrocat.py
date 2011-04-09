@@ -3,8 +3,6 @@ from __future__ import print_function
 
 import random
 import math
-import itertools
-import collections
 
 import pyglet
 from pyglet import window
@@ -17,32 +15,9 @@ import pymunk
 import data
 
 from constants import G, FUDGE, DEFAULT_TYPE, BALL_TYPE, GRAVITY_TYPE, CAT_TYPE
-
-#----------------------------------------------------------------
-# Signal registry, handles callbacks between distant objects.
-
-# list of signals for easy reference:
-
-# 'shoot': a ball is shot.
-# 'cathit': a cat got hit by a ball.
-# 'catdead': a cat is dead.
-
-_register = collections.defaultdict(list)
-
-def register(name, callback):
-    """Register a callback function for a signal called 'name'"""
-
-    if callback in _register[name]:
-        # bugger off, you have registered once for this signal before.
-        return
-
-    _register[name].append(callback)
-
-def signal(name, *args, **kwargs):
-    """Signal to all callback functions listening to 'name'."""
-
-    for fn in _register[name]:
-        fn(*args, **kwargs)
+from signals import register, signal
+from utils import clip, get_or_setdefault, make_rotator, CrudeVec
+from utils import distance, angle_between
 
 #----------------------------------------------------------------
 # Game in an object. Seriously the whole game is in Schrocat.
@@ -572,87 +547,4 @@ class Meter(object):
         self.points = max(self.points - qty, 0)
         return self.points
 
-#-----------------------------------------------------------
-# Utility functions.
-
-def get_or_setdefault(obj, attr, default):
-    """
-    Get an attribute from an object, if it doesn't exist set the default
-    attribute on the object.
-
-    """
-    value = getattr(obj, attr, default)
-    setattr(obj, attr, value)
-    return value
-
-def make_rotator(step=1, lim_left=None, lim_right=None):
-    """
-    returns a generator function that will rotate
-        until it hits left then back until it hits right.
-    args:
-        step: number of degrees to rotate per iteration.
-        lim_left: the counter_clockwise bound angle limit.
-        lim_right: the clockwise bound angle limit.
-    """
-    # two rotators could be made, one with limits one without.
-    if lim_left is not None and lim_right is not None:
-        def rotator():
-            rotation = 0
-            direction = 1 * step
-            while 1:
-                if lim_left > rotation or lim_right < rotation:
-                    direction = direction * -1
-
-                rotation += direction
-                yield rotation
-
-        return rotator()
-
-    # a simple rotator that only goes in one direction.
-    def rotator():
-        counter = itertools.count()
-        while 1:
-            yield (counter.next() * step % 360)
-    return rotator()
-
-class CrudeVec(complex):
-    """
-    a crude (but clever?) Vector.
-    """
-
-    @property
-    def x(self):
-        return self.real
-
-    @property
-    def y(self):
-        return self.imag
-
-def distance(left, right):
-    """
-    Return the distance between the left and right objects.
-
-    """
-    return math.hypot(left.x - right.x, left.y - right.y)
-
-def angle_between(center, other):
-    """
-    Find the radian angle from the center object to the other object.
-
-    """
-    x = other.x - center.x
-    y = other.y - center.y
-
-    return math.atan2(y, x)
-
-def clip(upper, lower):
-    """
-    return a function that clips its argument to upper and lower bounds.
-    
-    """
-    def _(value):
-        """Oh so sneaky."""
-        return max(min(upper, value), lower)
-
-    return _
 
