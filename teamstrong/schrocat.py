@@ -154,6 +154,18 @@ class Schrocat(window.Window):
         trail = load_and_anchor('trail.png', 2, 2)
         self.images['trail'] = trail
 
+        #-------------------------------
+        # load up some sounds.
+        self.sounds = {}
+
+        self.sounds['gravity'] = load_sound('gravityhit.wav')
+        self.sounds['cathit'] = load_sound('cathit.wav')
+
+        register('vortexhit', make_play_sound_callback(
+                                    self.sounds['gravity'].play))
+
+        register('cathit', make_play_sound_callback(
+                                    self.sounds['gravity'].play))
     def main_loop(self):
         clock.set_fps_limit(30)
 
@@ -696,4 +708,10 @@ class Meter(object):
         self.points = max(self.points - qty, 0)
         return self.points
 
+def load_sound(filepath, streaming=False):
+    """
+    Load a sound using pyglet resource. set streaming to true if this
+    is a background music sound.
 
+    """
+    return pyglet.resource.media(data.filepath(filepath), streaming)
