@@ -134,10 +134,10 @@ class Schrocat(window.Window):
         ball = load_and_anchor('ball.png', 2, 2)
         self.images['ball'] = ball
 
-        frame = load_and_anchor('frame.png', 2, 2)
+        frame = load_and_anchor('blueturret_00.png', 2, 2)
         self.images['frame'] = frame
 
-        barrel = load_and_anchor('barrel.png', 2, 4)
+        barrel = load_and_anchor('bluebarrel_00.png', 2, 4)
         self.images['barrel'] = barrel
 
         cathead = load_and_anchor('cathead.png', 2, 3)
@@ -631,8 +631,8 @@ class Turret(object):
         self.x, self.y = x,y
 
         # create sprites for the turret from images
-        self.frame = pyglet.sprite.Sprite(frame, batch=batch) 
         self.barrel = pyglet.sprite.Sprite(barrel, batch=batch) 
+        self.frame = pyglet.sprite.Sprite(frame, batch=batch) 
 
         
     def initPowerBar(self, image, batch, nBars, smallWid, bigWid):
