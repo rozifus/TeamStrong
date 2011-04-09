@@ -9,6 +9,7 @@ list of signals for easy reference:
 'shoot': a ball is shot.
 'cathit': a cat got hit by a ball.
 'catdead': a cat is dead.
+'vortexhit': ball hit a vortex.
 
 example of use:
 

@@ -1,5 +1,5 @@
 class NineTimesError(Exception):
     """Base exception for Nine Times game."""
 
-class NoRootObjectError(NineTimesError):
-    """Level did not define a root object (i.e a room)."""
+class NoMoreVortexError(NineTimesError):
+    """Cannot return any more vortexes, none exist."""

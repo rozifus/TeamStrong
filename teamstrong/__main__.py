@@ -4,9 +4,11 @@ import data
 
 from schrocat import Schrocat
 
+from levels import LevelOne
+
 def main():
     """ your app starts here
     """
 
 
-    Schrocat().main_loop()
+    Schrocat(levels=[LevelOne]).main_loop()

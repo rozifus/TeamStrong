@@ -25,7 +25,12 @@ from utils import distance, angle_between
 class Schrocat(window.Window):
 
     def __init__(self, *args, **kwargs):
-        window.Window.__init__(self, *args, **kwargs)
+        """Expects a levels keyword argument."""
+        self.levels = levels = kwargs.pop('levels')
+        self.level = level = levels[0]()
+
+        super(Schrocat, self).__init__(*args, **kwargs)
+
         self.images = {}
         self.labels = {}
         self.actors = []
@@ -40,16 +45,28 @@ class Schrocat(window.Window):
                                     font_name='Arial', 
                                     font_size=10,
                                     x=10, y=10,)
+        # window width and height.
+        width, height = self.get_size()
 
         # create a turret
-        self.turret = Turret(100, 100, self.batch,
+        (turx, tury) = level.turret
+        self.turret = Turret(turx * width, tury * height, self.batch,
                     self.images['frame'], self.images['barrel'])
+
         self.actors.append(self.turret)
 
+        #----------------------
         # schrocat live on.
-        self.cat = Cat(300, 300, self.batch,
-                    self.images['catbody'], self.images['cathead'])
-        self.actors.append(self.cat)
+        catx, caty = level.next_cat
+        cat = self._cat(catx * width, caty * width)
+
+        #----------------------
+        # make a bunch of vortexes..
+        vortexes_or_vortecii_which_is_correct = level.get_vortexes_for_level(1)
+        for v in vortexes_or_vortecii_which_is_correct:
+            (x, y), strength, level = v
+            gravity = self._gravity(x * width, y * height)
+            gravity.strength = strength
 
         def make_callback_for(obj):
 
@@ -202,6 +219,8 @@ class Schrocat(window.Window):
                                 self.space)
         gravity.parent = self
         self.actors.append(gravity)
+        register('vortexhit', gravity.hitbyball)
+        return gravity
 
     def _bullet(self, x, y):
         """Make a bullet and add it near the turret."""
@@ -230,6 +249,15 @@ class Schrocat(window.Window):
         ball.parent = self
 
         self.actors.append(ball)
+        return ball
+
+    def _cat(self, x, y):
+        self.cat = Cat(x, y, self.batch,
+                    self.images['catbody'], self.images['cathead'])
+        self.cat.parent = self
+        self.actors.append(self.cat)
+        register('cathit', self.cat.move)
+        return self.cat
 
 #---------------------------------------------------------------------
 # Game objects.
@@ -240,6 +268,8 @@ class PhysicsElem(object):
     def __init__(self, mass, radius, x, y, batch, image, space):
 
         self.mass = mass
+        self.radius = radius
+
         self.image = pyglet.sprite.Sprite(image, batch=batch)
 
         inertia = pymunk.moment_for_circle(mass, 0, radius)
@@ -247,6 +277,24 @@ class PhysicsElem(object):
         body.position = x, y
         self.shape = shape = pymunk.Circle(body, radius)
         space.add(body, shape)
+
+    def grow(self, fraction):
+        """
+        grow the size of the image and the pymunk shape by a fraction.
+
+        """
+        self.image.scale += fraction
+        radius, mass = self.radius, self.mass
+        x, y = self.x, self.y
+
+        self.parent.space.remove(self.shape)
+        radius = radius * math.sqrt(fraction)
+        
+        inertia = pymunk.moment_for_circle(mass, 0, radius)
+        self.body = body = pymunk.Body(mass, inertia)
+        body.position = x, y
+        self.shape = shape = pymunk.Circle(body, radius)
+        self.parent.space.add(body, shape)
 
     @property
     def x(self):
@@ -297,7 +345,7 @@ class PhysicsElem(object):
         pass
 
     def __contains__(self, x_y):
-        return self.body.point_query(x_y)
+        return self.shape.point_query(x_y)
 
 
 class Ball(PhysicsElem):
@@ -321,6 +369,13 @@ class Ball(PhysicsElem):
             forcex += _forcex
             forcey += _forcey
 
+            # have I hit a vortex?
+            if self.hit(gravity):
+                signal('vortexhit', gravity=gravity, ball=self)
+
+                # well if that is the case, then time for me to die.
+                signal('kill', self)
+
         self.force = (forcex, forcey)
 
         # have I hit a cat?
@@ -328,6 +383,7 @@ class Ball(PhysicsElem):
             signal('cathit')
             # well I did. I should surely die now.
             signal('kill', self)
+       
             
 class Gravity(PhysicsElem):
     """A gravitational well."""
@@ -335,6 +391,30 @@ class Gravity(PhysicsElem):
     def __init__(self, mass, radius, x, y, batch, image, space):
         PhysicsElem.__init__(self, mass, radius, x, y, batch, image, space)
         self.collision_type = GRAVITY_TYPE
+        self._strength = 0.1
+
+    def hitbyball(self, gravity, ball):
+        """
+        A callback method that takes the gravity that was hit, and
+        the ball that hit it.
+
+        """
+        # check, was I the gravity that was hit?
+        if not gravity is self:
+            return
+
+        # I have been hit by a ball, need to upgrade my strength.
+        # and mabbe get a bit bigger.
+        self.strength = self.strength + 0.2
+        self.grow(0.2)
+
+    @property
+    def strength(self):
+        return self._strength
+
+    @strength.setter
+    def strength(self, value):
+        self._strength = value
 
     def custom_update(self):
         """
@@ -356,6 +436,10 @@ class Gravity(PhysicsElem):
 
         """
         force = G * FUDGE * self.mass * obj.mass / distance(self, obj) ** 2
+
+        # adjust for this gravity strength.
+        force = self.strength * force
+
         # angle from ball to this gravity.
         angle = angle_between(obj, self)
 
@@ -381,6 +465,12 @@ class Cat(object):
     def hit(self, other):
         """Returns True if this x, y pair is inside the other."""
         return (self.x, self.y) in other
+
+    def move(self):
+        """I got hit, the jig is up. time to move on."""
+        x, y = self.parent.level.next_cat
+        width, height = self.parent.get_size()
+        self.x, self.y = x * width, y * height
 
     def __contains__(self, x_y):
         x, y = x_y
