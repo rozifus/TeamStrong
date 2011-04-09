@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import random
 import math
+import time
 
 import pyglet
 from pyglet import window
@@ -150,6 +151,9 @@ class Schrocat(window.Window):
         x = load_and_anchor('x.png', 2, 2)
         self.images['x'] = x
 
+        trail = load_and_anchor('trail.png', 2, 2)
+        self.images['trail'] = trail
+
     def main_loop(self):
         clock.set_fps_limit(30)
 
@@ -270,6 +274,16 @@ class Schrocat(window.Window):
         self.actors.append(x)
         return x
 
+    def onscreen(self, x, y):
+        """
+        Returns true if the given x, y is on screen.
+
+        """
+        within_x = 0 < x and x < self.width
+        within_y = 0 < y and y < self.height
+
+        return within_x and within_y
+
 #---------------------------------------------------------------------
 # Game objects.
 
@@ -371,6 +385,8 @@ class Ball(PhysicsElem):
         Find the net force from all of the gravities to me!
 
         Then work out if I have hit a cat or something...
+
+        also lay a trail as we go.
         """
         gravities = self.parent.gravities
 
@@ -394,7 +410,15 @@ class Ball(PhysicsElem):
             signal('cathit')
             # well I did. I should surely die now.
             signal('kill', self)
-       
+
+        # leave a trail but only if we are on the screen.
+        if not self.parent.onscreen(self.x, self.y):
+            return
+
+        trail = X(self.x, self.y, self.parent.batch, self.parent.images['trail'])
+        trail.minopacity = 1
+        trail.rate = 1.01
+        self.parent.actors.append(trail)
             
 class Gravity(PhysicsElem):
     """A gravitational well."""
@@ -496,13 +520,19 @@ class X(object):
         self.image.opacity = opacity
         self.x, self.y = x, y
         self.opacity = opacity
+        self.minopacity = 1
+        self.rate = 1.005
+        self.seconds_to_live = 10
+        self.created_at = time.time()
 
     def update(self):
-        self.opacity = self.opacity / 1.005
+        self.opacity = self.opacity / self.rate
         self.image.opacity = int(self.opacity)
         self.image.position = (self.x, self.y)
 
-        if self.opacity < 0.05:
+        if self.opacity < self.minopacity:
+            signal('kill', self)
+        elif time.time() - self.created_at > self.seconds_to_live:
             signal('kill', self)
 
 class Turret(object):
