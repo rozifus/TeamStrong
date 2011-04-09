@@ -147,6 +147,9 @@ class Schrocat(window.Window):
         gravity = load_and_anchor('gravity.png', 2, 2)
         self.images['gravity'] = gravity
 
+        x = load_and_anchor('x.png', 2, 2)
+        self.images['x'] = x
+
     def main_loop(self):
         clock.set_fps_limit(30)
 
@@ -203,6 +206,9 @@ class Schrocat(window.Window):
                 # signal that we are making a bullet.
                 signal('shoot')
                 self._bullet(x, y)
+
+                # make a new X marks the spot.
+                x = self._xmark(x, y)
             
         elif button == 4:
             self._gravity(x, y)
@@ -258,6 +264,11 @@ class Schrocat(window.Window):
         self.actors.append(self.cat)
         register('cathit', self.cat.move)
         return self.cat
+
+    def _xmark(self, x, y):
+        x = make_x(x, y, self.batch, self.images['x'])
+        self.actors.append(x)
+        return x
 
 #---------------------------------------------------------------------
 # Game objects.
@@ -479,6 +490,21 @@ class Cat(object):
 
         return within_x and within_y
 
+class X(object):
+    def __init__(self, x, y, batch, image, opacity=255):
+        self.image = pyglet.sprite.Sprite(image, batch=batch)
+        self.image.opacity = opacity
+        self.x, self.y = x, y
+        self.opacity = opacity
+
+    def update(self):
+        self.opacity = self.opacity / 1.005
+        self.image.opacity = int(self.opacity)
+        self.image.position = (self.x, self.y)
+
+        if self.opacity < 0.05:
+            signal('kill', self)
+
 class Turret(object):
     length = 60
 
@@ -534,6 +560,9 @@ def make_ball(x, y, batch, image, space, mass=1, radius=5):
 
 def make_gravity(x, y, batch, image, space, mass=1e6, radius=50):
     return Gravity(mass, radius, x, y, batch, image, space)
+
+def make_x(x, y, batch, image):
+    return X(x, y, batch, image)
 
 #-----------------------------------------------------------
 # Interface objects.
