@@ -519,8 +519,10 @@ class Cat(object):
 
     def __contains__(self, x_y):
         x, y = x_y
-        within_x = self.body.x < x and x < self.body.x + self.body.width
-        within_y = self.body.y < y and y < self.body.y + self.body.height
+        halfW = self.body.width / 2
+        halfH = self.body.height / 2
+        within_x = self.body.x - halfW < x and x < self.body.x + halfW
+        within_y = self.body.y - halfH < y and y < self.body.y + halfH
 
         return within_x and within_y
 
