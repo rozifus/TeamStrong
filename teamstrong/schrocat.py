@@ -53,7 +53,8 @@ class Schrocat(window.Window):
         (turx, tury) = level.turret
         self.turret = Turret(turx * width, tury * height, self.batch,
                     self.images['frame'], self.images['barrel'])
-
+        self.turret.initPowerBar(self.images['powerbar'], self.batch, 4, 25, 70)
+                
         self.actors.append(self.turret)
 
         #----------------------
@@ -154,6 +155,9 @@ class Schrocat(window.Window):
         trail = load_and_anchor('trail.png', 2, 2)
         self.images['trail'] = trail
 
+        powerbar = load_and_anchor('powerbar.png', 2, 2)
+        self.images['powerbar'] = powerbar
+
         #-------------------------------
         # load up some sounds.
         self.sounds = {}
@@ -249,17 +253,9 @@ class Schrocat(window.Window):
         xTip, yTip = self.turret.tip
         angle = self.turret.rotation
         
-        minLaunchVel = 10
         maxLaunchVel = 600
-        refDist = 250.0
-
-        # Velocity is dependent on the distance the pointer is from the turret.
-        # As this is a ratio, I removed the sqrt and squared the distance it
-        # will is divided by.
-
-        _ = CrudeVec
-        speed = maxLaunchVel * distance(_(x, y), _(xTip, yTip)) / refDist
-        speed = clip(maxLaunchVel, minLaunchVel)(speed)
+        
+        speed = self.turret.power * maxLaunchVel
 
         # create a crude velocity.
         velx = math.sin(angle) * speed
@@ -547,6 +543,99 @@ class X(object):
         elif time.time() - self.created_at > self.seconds_to_live:
             signal('kill', self)
 
+
+class PowerBar(object):
+    def __init__(self, image, batch, nBars, smallWid, bigWid):
+        self.nBars = nBars
+        self.sprites = []
+        for i in range(nBars):
+            self.sprites.append(pyglet.sprite.Sprite(image, batch=batch))
+        
+        # scaling required to get the first bar to be 'bigWid'
+        bigScale = float(bigWid) / self.sprites[0].width
+        smallScale = float(smallWid) / self.sprites[0].width
+        
+        smallCol = (0,0,255) #blue
+        bigCol = (255,0,0) #red
+        
+        def colMix(col1, col2, ratio):
+            """
+            Linear interpolation between col1 and col2
+            """
+            r = int(ratio * (col1[0] - col2[0])) + col2[0]
+            g = int(ratio * (col1[1] - col2[1])) + col2[1]
+            b = int(ratio * (col1[2] - col2[2])) + col2[2]
+            return (r, g, b)
+        
+        colorStep = 1.0 /(nBars -1)
+        currColor = 1.0
+        scaleStep = (bigScale - smallScale) / (nBars-1)
+        currScale = smallScale
+        self.barOffsets = []
+        currHeight = 0
+        # start from small to large bar
+        for sprite in self.sprites:
+            sprite.scale = currScale
+            # set scale for the next step.
+            currScale += scaleStep
+
+            self.barOffsets.append(currHeight)
+            # set height for next bar.
+            currHeight += sprite.height
+
+            sprite.color = colMix(smallCol, bigCol, currColor)
+            # set colour ratio for the next bar.
+            currColor -= colorStep
+
+            sprite.visible = False
+            
+
+        
+    def updatePos(self, x, y, rot):
+        """
+        Move all of the bars so the stay in formation
+
+        """
+        for i, sprite in enumerate(self.sprites):
+            sprite.x = x + math.sin(math.radians(rot)) * self.barOffsets[i]
+            sprite.y = y + math.cos(math.radians(rot)) * self.barOffsets[i]
+            sprite.rotation = rot
+
+    def updatePower(self, power):
+        """
+        This draws the different bars of the powerBar with varying opacity.
+
+        For instance, if there are four bars, then the power rating will be
+        split into 4 sections, 0-25, 25-50 etc. Only the first bar will be 
+        visible if the power is in the first band. Its opacity (out of a
+        max set by maxOpac) will be relative to its magnitude in this range; 
+        section 2 will barely be visible if the power is 28% but almost
+        completly opaque when approaching 50%.
+
+        """
+        maxOpac = 200
+        bandSize = 1.0 / self.nBars
+        for i, sprite in enumerate(self.sprites):
+            # divide the power bars into sections. ie. if there are 4 bars
+            # and power is only .20 then only the first bar is visible and
+            # only (.20/.25) of the max oppacity
+            if power < float(i) / self.nBars:
+                # underpowered :(
+                sprite.visible = False
+            elif power < (float(i) + 1) /self.nBars:
+                # power in this section
+                sprite.visible = True
+                # opac = maxOpac * ( amount past threshold / size of band)
+                sprite.opacity = int(maxOpac * 
+                                    (power - (float(i)) /self.nBars) /
+                                    bandSize)
+            else:
+                # Over powered!!!
+                sprite.visible = True
+                sprite.opacity = maxOpac
+
+        
+
 class Turret(object):
     length = 60
 
@@ -557,13 +646,38 @@ class Turret(object):
         self.frame = pyglet.sprite.Sprite(frame, batch=batch) 
         self.barrel = pyglet.sprite.Sprite(barrel, batch=batch) 
 
+        
+    def initPowerBar(self, image, batch, nBars, smallWid, bigWid):
+        self.powerBar = PowerBar(image, batch, nBars, smallWid, bigWid)
+
     def aim(self, x, y):
         # this could possible be simpler, i don't like trig much :( 
         self.barrel.rotation = (math.degrees(math.atan2(self.x-x, self.y-y)) + 180) % 360
+        
         if self.barrel.rotation > 90 and self.barrel.rotation < 270:
             if self.barrel.rotation < 180:
                 self.barrel.rotation = 90
             else: self.barrel.rotation = 270
+
+        # update power and other things to do with the aim.    
+        self.updatePower(x, y)
+        self.powerBar.updatePower(self.power)
+        xTip, yTip = self.tip
+        self.powerBar.updatePos(xTip, yTip, self.barrel.rotation)
+
+    def updatePower(self, x, y):
+        """
+        Compute the power!!!
+
+        Measured as the distance from the tip of the turret.
+        """
+        refDist = 250.0
+        xTip, yTip = self.tip
+        # Velocity is dependent on the distance the pointer is from the turret.
+        _ = CrudeVec
+        self.power = distance(_(x, y), _(xTip, yTip)) / refDist
+        self.power = clip(1.0, 0.05)(self.power)
+
 
     @property
     def tip(self):
