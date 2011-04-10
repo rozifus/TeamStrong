@@ -3,6 +3,7 @@
 *~
 lib/*
 bin/*
+src/*
 include/*
 build/*
 .Python

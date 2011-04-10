@@ -95,3 +95,10 @@ def clip(upper, lower):
 
     return _
 
+def only_on_active_window(fn):
+    def is_active_window(self, *args, **kwargs):
+        if self._window_active:
+            return fn(self, *args, **kwargs)
+    return is_active_window
+
+

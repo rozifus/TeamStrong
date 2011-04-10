@@ -21,19 +21,22 @@ from constants import G, FUDGE, DEFAULT_TYPE, BALL_TYPE, GRAVITY_TYPE, CAT_TYPE
 from signals import register, signal
 from utils import clip, get_or_setdefault, make_rotator, CrudeVec
 from utils import distance, angle_between, make_play_sound_callback
+from utils import only_on_active_window
 
 #----------------------------------------------------------------
 # Game in an object. Seriously the whole game is in Schrocat.
 
 class Schrocat(window.Window):
+    _window_active = False
 
     def __init__(self, *args, **kwargs):
-        """Expects a levels keyword argument."""
-        self.levels = levels = kwargs.pop('levels')
-        self.level = level = levels[0]()
-
         super(Schrocat, self).__init__(*args, **kwargs)
 
+    def init(self, levels):
+        """Expects a levels keyword argument."""
+        self._window_active = True
+
+        self.level = level = levels[0]()
         self.images = {}
         self.labels = {}
         self.actors = []
@@ -96,6 +99,8 @@ class Schrocat(window.Window):
 
         register('kill', self.remove_object)
 
+        return self
+
     def remove_object(self, obj, *args, **kwargs):
         """
         try to remove this object and pretend it never existed.
@@ -108,6 +113,7 @@ class Schrocat(window.Window):
             pass 
 
     def init_content(self):
+        print ('initcontent')
         # load turret images, set rotational anchors, store for later
         pymunk.init_pymunk()
 
@@ -122,17 +128,6 @@ class Schrocat(window.Window):
 
         self.space.add_collision_handler(GRAVITY_TYPE, BALL_TYPE, 
                                             begin, None, None, None)
-
-        def load_and_anchor(filename, anchor_x, anchor_y):
-            """
-            Returns a pyglet image whose x and y anchor points
-            are set as a fraction of total width and height.
-            """
-            image = pyglet.image.load(data.filepath(filename))
-            image.anchor_x = image.width // anchor_x
-            image.anchor_y = image.height // anchor_y
-            return image
-
         ball = load_and_anchor('ball.png', 2, 2)
         self.images['ball'] = ball
 
@@ -208,18 +203,24 @@ class Schrocat(window.Window):
 
     """ Event Handlers """
 
+    @only_on_active_window
     def on_mouse_motion(self, x, y, dx, dy):
+
         # tell the turret where the cursor is pointed
         self.turret.aim(x,y)
 
+    @only_on_active_window
     def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
         pass
 
+    @only_on_active_window
     def on_mouse_press(self, x, y, button, modifiers):
         """
         Create a new bullet at the turret. (LEFT CLICK)
         Create a new gravity well. (RIGHT CLICK).
         """
+        if not self._window_active:
+            return
 
         # left click make a bullet.
         if button == 1:
@@ -293,7 +294,6 @@ class Schrocat(window.Window):
         within_y = 0 < y and y < self.height
 
         return within_x and within_y
-
 #---------------------------------------------------------------------
 # Game objects.
 
@@ -843,3 +843,14 @@ def load_sound(filepath, streaming=False):
     return Fake()
 
     return SoundClass(load_media(data.filepath(filepath), streaming=streaming))
+
+def load_and_anchor(filename, anchor_x=None, anchor_y=None):
+    """
+    Returns a pyglet image whose x and y anchor points
+    are set as a fraction of total width and height.
+    """
+    image = pyglet.image.load(data.filepath(filename))
+    if anchor_x and anchor_y:
+        image.anchor_x = image.width // anchor_x
+        image.anchor_y = image.height // anchor_y
+    return image

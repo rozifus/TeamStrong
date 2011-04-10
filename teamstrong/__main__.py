@@ -5,10 +5,11 @@ import data
 from schrocat import Schrocat
 
 from levels import LevelOne
+import ui
 
 def main():
     """ your app starts here
     """
 
 
-    Schrocat(levels=[LevelOne]).main_loop()
+    #Schrocat(levels=[LevelOne]).main_loop()
