@@ -184,6 +184,8 @@ class Schrocat(window.Window):
                 self.flip()
             except ctypes.ArgumentError:
                 pass
+        
+        self._window_active = False
 
     def update(self):
         # update anything in the actorlist, turrets, cats, etc
@@ -199,7 +201,13 @@ class Schrocat(window.Window):
             self._over = True
 
         if not self.ballMeter.active:
-            self._over = True
+            ballonscreen = False
+            for a in self.actors:
+                if a.__class__ == Ball:
+                    if self.onscreen(a.x, a.y):
+                        ballonscreen = True
+            if not ballonscreen:
+                self._over = True
 
 
     def draw(self):
