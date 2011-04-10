@@ -1,5 +1,5 @@
-The Nine Times
-==============
+Schrodinger's Cat
+=================
 
 Entry in PyWeek #12  <http://www.pyweek.org/12/>
 URL: https://github.com/rozifus/TeamStrong
@@ -21,12 +21,17 @@ Othewise open a terminal / console and "cd" to the game directory and run:
 How to Play the Game
 --------------------
 
-A band of brothers (literally)
+Schrodinger's cat needs to be gently fed kibble (Kibble is dried cat food).
 
-Move the cursor around the screen with the mouse.
+You are the turret and can shoot kibble. 
 
-Press the left mouse button to fire the ducks.
+Use the mouse to aim the turret.
+Mouse pointer distance from turret determines power of kibble shot.
+Left click to shoot kibble.
+Right click to lay a new vortex.
 
+Left meter is your bullets remaining
+Right meter is cat hits remaining until you win!
 
 Development notes 
 -----------------
