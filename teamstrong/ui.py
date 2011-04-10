@@ -33,7 +33,7 @@ def onlevel(lvl):
         window.init(levels=[lvl]).main_loop()
     return _
 
-lvls = [levels.LevelOne, levels.LevelTwo]
+lvls = [levels.LevelOne, levels.LevelTwo, levels.LevelThree]
 
 lvl_buttons = [
         ui.Button('Level %d' % (i + 1), action=onlevel(lvl))

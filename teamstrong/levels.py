@@ -104,3 +104,44 @@ class LevelTwo(LevelBase):
     ]
 
     turret = (0.15, 0.85)
+
+
+class LevelThree(LevelBase):
+    """
+    Two vortexes and a cat to hit!
+
+    cat can appear in multiple places (at random) after being hit.
+
+    ^ = turret
+    @ = vortex
+    & = cat
+
+    ----------------------
+    | ^          @ &    &|
+    |             @&     |
+    |              @ &   |
+    |               @    |
+    |                    |
+    | ^                  |
+    ----------------------
+
+
+    all locations are a faction of screen width and height. 
+
+    """
+
+    # tuple: ( (x, y), strength, level)
+    vortexes = [
+            ((0.75, 0.75), 0.7, 0),
+            ((0.80, 0.70), 0.5, 0),
+            ((0.85, 0.65), 0.5, 0),
+            ((0.90, 0.60), 0.7, 0),
+    ]
+
+    catpositions = [
+                (0.85, 0.70),
+                (0.90, 0.90),
+                (0.90, 0.65),
+    ]
+
+    turret = (0.15, 0.15)
