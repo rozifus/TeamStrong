@@ -718,7 +718,7 @@ class Turret(object):
 def make_ball(x, y, batch, image, space, mass=1, radius=5):
     return Ball(mass, radius, x, y, batch, image, space)
 
-def make_gravity(x, y, batch, image, space, mass=1e6, radius=50):
+def make_gravity(x, y, batch, image, space, mass=1e6, radius=25):
     return Gravity(mass, radius, x, y, batch, image, space)
 
 def make_x(x, y, batch, image):
