@@ -4,16 +4,6 @@ import math
 #-----------------------------------------------------------
 # Utility functions.
 
-def make_play_sound_callback(sound_function):
-    """
-    Returns a wrapper around the pyglet.resources.sounds.play function that
-    accepts *args, and **kwargs required of all callbacks.
-
-    """
-    def callback(*args, **kwargs):
-        sound_function()
-    return callback
-
 def get_or_setdefault(obj, attr, default):
     """
     Get an attribute from an object, if it doesn't exist set the default

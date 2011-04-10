@@ -8,6 +8,18 @@ Members: rozifus,kburd,jtrain,danaran
 License: see LICENSE.txt
 
 
+Things you need
+---------------
+
+pyglet http://ww.pyglet.org/
+pymunk http://code.google.com/p/pymunk/ 
+
+Attribution
+-----------
+
+We used Tristam MacDonald's SimplUi
+http://swiftcoder.wordpress.com/2009/08/17/simplui-1-0-4-released/
+
 Running the Game
 ----------------
 
