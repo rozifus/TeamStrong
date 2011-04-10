@@ -19,9 +19,9 @@ TODO = open('TODO.txt').read()
 
 METADATA = {
     'name':APP_NAME,
-    'version':          '0.0.1',
+    'version':          '1.0.0',
     'license':          'short_licence',
-    'description':      'A band of brothers (literally)',
+    'description':      'Schrodinger\'s cat game',
     'author':           'danaran, jtrain, kburd, rozifus',
     #'author_email':     '',
     'url':              'https://github.com/rozifus/TeamStrong',
@@ -118,7 +118,7 @@ def add_files(dest,generator):
             dest.append(filename)
 
 # define what is our data
-_DATA_DIR = os.path.join('teamstrong', 'data')
+_DATA_DIR = 'data'
 data = []
 add_files(data,os.walk(_DATA_DIR))
 
