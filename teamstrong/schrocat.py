@@ -28,14 +28,13 @@ from utils import only_on_active_window
 
 class Schrocat(window.Window):
     _window_active = False
+    _over = False
 
     def __init__(self, *args, **kwargs):
         super(Schrocat, self).__init__(*args, **kwargs)
 
     def init(self, levels):
         """Expects a levels keyword argument."""
-        self._window_active = True
-
         self.level = level = levels[0]()
         self.images = {}
         self.labels = {}
@@ -75,6 +74,9 @@ class Schrocat(window.Window):
             gravity = self._gravity(x * width, y * height)
             gravity.strength = strength
 
+        self._over = False
+        self._window_active = True
+
         def make_callback_for(obj):
 
             def someonehit(*args, **kwargs):
@@ -86,6 +88,8 @@ class Schrocat(window.Window):
                             (1.0,0.0,0.0), (0.0,1.0,0.0), 10, 5, True)
         self.catMeter = Meter(580, 80, 50, 340,
                             (1.0,0.0,0.0), (0.0,1.0,0.0), 10, 5, True)
+
+        self.catMeter.parent = self
 
         self.interfaces.append(self.ballMeter)
         self.interfaces.append(self.catMeter)
@@ -113,7 +117,6 @@ class Schrocat(window.Window):
             pass 
 
     def init_content(self):
-        print ('initcontent')
         # load turret images, set rotational anchors, store for later
         pymunk.init_pymunk()
 
@@ -170,7 +173,7 @@ class Schrocat(window.Window):
     def main_loop(self):
         clock.set_fps_limit(30)
 
-        while not self.has_exit:
+        while not self.has_exit and not self._over:
 
             self.dispatch_events()
             self.update()
@@ -194,6 +197,15 @@ class Schrocat(window.Window):
 
         for interface in self.interfaces:
             interface.update()
+
+
+        # if the cat meter isn't active. Game complete buddy.
+        if not self.catMeter.active:
+            self._over = True
+
+        if not self.ballMeter.active:
+            self._over = True
+
 
     def draw(self):
         self.batch.draw()
@@ -219,9 +231,6 @@ class Schrocat(window.Window):
         Create a new bullet at the turret. (LEFT CLICK)
         Create a new gravity well. (RIGHT CLICK).
         """
-        if not self._window_active:
-            return
-
         # left click make a bullet.
         if button == 1:
 
