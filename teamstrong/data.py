@@ -9,8 +9,14 @@ pyglet.resource search path.
 '''
 
 import os
+import sys
 
-data_py = os.path.abspath(os.path.dirname(__file__))
+if 'python' in sys.executable:
+    data_py = os.path.abspath(os.path.dirname(__file__))
+else:
+    data_py = os.path.abspath(os.path.dirname(sys.executable))
+
+
 
 def _dir(dirname):
     return os.path.normpath(os.path.join(data_py, '..', dirname))
