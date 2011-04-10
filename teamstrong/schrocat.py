@@ -6,6 +6,8 @@ import math
 import time
 
 import pyglet
+from pyglet.media import Player, StaticSource, StreamingSource
+from pyglet.media import load as load_media
 from pyglet import window
 from pyglet import clock
 from pyglet import text
@@ -18,7 +20,7 @@ import data
 from constants import G, FUDGE, DEFAULT_TYPE, BALL_TYPE, GRAVITY_TYPE, CAT_TYPE
 from signals import register, signal
 from utils import clip, get_or_setdefault, make_rotator, CrudeVec
-from utils import distance, angle_between
+from utils import distance, angle_between, make_play_sound_callback
 
 #----------------------------------------------------------------
 # Game in an object. Seriously the whole game is in Schrocat.
@@ -828,4 +830,16 @@ def load_sound(filepath, streaming=False):
     is a background music sound.
 
     """
-    return pyglet.resource.media(data.filepath(filepath), streaming)
+    SoundClass = StaticSource
+    if streaming:
+        SoundClass = StreamingSource
+
+    # for now return a fake class because I am getting AVBin exceptions
+    # where i cannot load the .wav files?
+    class Fake(object):
+        def play(self):
+            pass
+
+    return Fake()
+
+    return SoundClass(load_media(data.filepath(filepath), streaming=streaming))
