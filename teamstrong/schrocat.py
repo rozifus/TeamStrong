@@ -131,10 +131,10 @@ class Schrocat(window.Window):
         ball = load_and_anchor('ball.png', 2, 2)
         self.images['ball'] = ball
 
-        frame = load_and_anchor('frame.png', 2, 2)
+        frame = load_and_anchor('blueturret_00.png', 2, 2)
         self.images['frame'] = frame
 
-        barrel = load_and_anchor('barrel.png', 2, 4)
+        barrel = load_and_anchor('bluebarrel_00.png', 2, 4)
         self.images['barrel'] = barrel
 
         cathead = load_and_anchor('cathead.png', 2, 3)
@@ -519,8 +519,10 @@ class Cat(object):
 
     def __contains__(self, x_y):
         x, y = x_y
-        within_x = self.body.x < x and x < self.body.x + self.body.width
-        within_y = self.body.y < y and y < self.body.y + self.body.height
+        halfW = self.body.width / 2
+        halfH = self.body.height / 2
+        within_x = self.body.x - halfW < x and x < self.body.x + halfW
+        within_y = self.body.y - halfH < y and y < self.body.y + halfH
 
         return within_x and within_y
 
@@ -645,8 +647,8 @@ class Turret(object):
         self.x, self.y = x,y
 
         # create sprites for the turret from images
-        self.frame = pyglet.sprite.Sprite(frame, batch=batch) 
         self.barrel = pyglet.sprite.Sprite(barrel, batch=batch) 
+        self.frame = pyglet.sprite.Sprite(frame, batch=batch) 
 
         
     def initPowerBar(self, image, batch, nBars, smallWid, bigWid):
