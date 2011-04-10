@@ -19,7 +19,7 @@ TODO = open('TODO.txt').read()
 
 METADATA = {
     'name':APP_NAME,
-    'version':          '1.0.0',
+    'version':          '1.0.1',
     'license':          'short_licence',
     'description':      'Schrodinger\'s cat game',
     'author':           'danaran, jtrain, kburd, rozifus',

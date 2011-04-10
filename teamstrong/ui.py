@@ -51,6 +51,10 @@ frame.add(dialogue)
 
 @window.event
 def on_draw():
+
+    if window._window_active:
+        return
+
     window.clear()
     img.draw()
     frame.draw()
