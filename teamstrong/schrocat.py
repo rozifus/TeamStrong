@@ -4,6 +4,7 @@ from __future__ import print_function
 import random
 import math
 import time
+import functools
 
 import pyglet
 from pyglet.media import Player, StaticSource, StreamingSource
@@ -100,6 +101,9 @@ class Schrocat(window.Window):
 
         callback = make_callback_for(self.catMeter)
         register('cathit', callback)
+
+        add_three_balls = functools.partial(self.ballMeter.add, 3)
+        register('cathit', add_three_balls)
 
         register('kill', self.remove_object)
 
